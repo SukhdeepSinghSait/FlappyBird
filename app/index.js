@@ -58,21 +58,24 @@ const Index = () => {
     const birdCenterX = useDerivedValue(() => birdPosition.x + 32);
 
     const birdCenterY = useDerivedValue(() => birdY.value + 24);
-    const pipeOffset = 0;
+    const pipeOffset = useSharedValue(0);
+
+    const topPipeY = useDerivedValue(() => pipeOffset.value - 360);
+    const bottomPipeY = useDerivedValue(() => height - 280 + pipeOffset.value);
 
     const obstacles = useDerivedValue(() => {
         const allObstacles = [];
-        //add Top pipe
+        //add bottom pipe
         allObstacles.push({
             x: x.value,
-            y: height - 280 + pipeOffset,
+            y: bottomPipeY.value,
             w: pipeWidth,
             h: pipeHeight,
         });
-        //add Bottom pipe
+        //add top pipe
         allObstacles.push({
             x: x.value,
-            y: pipeOffset - 360,
+            y: topPipeY.value,
             w: pipeWidth,
             h: pipeHeight,
         });
@@ -97,6 +100,10 @@ const Index = () => {
         () => x.value,
         (currentValue, previousValue) => {
             const middle = birdPosition.x;
+            // change offset for the position of the next gap
+            if(previousValue && currentValue < -100 && previousValue >= -100) {
+                pipeOffset.value = Math.random() * 200 - 100;
+            }
           if (
             currentValue !== previousValue &&
             previousValue &&
@@ -209,14 +216,14 @@ const Index = () => {
         {/* Pipe */}
         <Image 
             image={pipeTop} 
-            y={pipeOffset - 360} 
+            y={topPipeY} 
             x={ x } 
             width={pipeWidth} 
             height={pipeHeight} 
         />
         <Image 
             image={pipeDown} 
-            y={height - 280 + pipeOffset} 
+            y={bottomPipeY} 
             x={ x } 
             width={pipeWidth} 
             height={pipeHeight} 
