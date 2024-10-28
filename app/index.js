@@ -6,8 +6,6 @@ import {
     Group,
     Text,
     useFont,
-    Circle,
-    Rect,
     } from "@shopify/react-native-skia";
 import { 
     useSharedValue, 
@@ -47,41 +45,35 @@ const Index = () => {
     const font = useFont(require('../assets/fonts/SpaceMono-Regular.ttf'), 30);
 
     const gameOver = useSharedValue(false);
-    const x = useSharedValue(width);  
+    const pipeX = useSharedValue(width);  
 
     const birdY = useSharedValue(height / 3);
-    const birdPosition = {
-        x: width / 4,
-    }
+    const birdX = width / 4;
+
     const birdYVelocity = useSharedValue(0);
 
-    const birdCenterX = useDerivedValue(() => birdPosition.x + 32);
-
-    const birdCenterY = useDerivedValue(() => birdY.value + 24);
     const pipeOffset = useSharedValue(0);
 
     const topPipeY = useDerivedValue(() => pipeOffset.value - 360);
     const bottomPipeY = useDerivedValue(() => height - 280 + pipeOffset.value);
 
-    const obstacles = useDerivedValue(() => {
-        const allObstacles = [];
-        //add bottom pipe
-        allObstacles.push({
-            x: x.value,
+    const obstacles = useDerivedValue(() => [
+        //bottom pipe
+        {
+            x: pipeX.value,
             y: bottomPipeY.value,
             w: pipeWidth,
             h: pipeHeight,
-        });
-        //add top pipe
-        allObstacles.push({
-            x: x.value,
+        },
+        //top pipe
+        {
+            x: pipeX.value,
             y: topPipeY.value,
             w: pipeWidth,
             h: pipeHeight,
-        });
-        return allObstacles;
+        },
 
-    });
+    ]);
     
 
     useEffect(() => {
@@ -89,7 +81,7 @@ const Index = () => {
     },[]);
 
     const moveTheMap = () => {
-        x.value = withRepeat( withSequence( withTiming(-150, {duration: 3000, easing: Easing.linear})
+        pipeX.value = withRepeat( withSequence( withTiming(-150, {duration: 3000, easing: Easing.linear})
         , withTiming(width, {duration: 0})
     ), -1
     );
@@ -97,9 +89,9 @@ const Index = () => {
 
     {/* Scoring System */}
     useAnimatedReaction(
-        () => x.value,
+        () => pipeX.value,
         (currentValue, previousValue) => {
-            const middle = birdPosition.x;
+            const middle = birdX;
             // change offset for the position of the next gap
             if(previousValue && currentValue < -100 && previousValue >= -100) {
                 pipeOffset.value = Math.random() * 200 - 100;
@@ -130,12 +122,16 @@ const Index = () => {
     useAnimatedReaction(
         () => birdY.value,
         (currentValue, previousValue) => {
+            const center = { 
+                x: birdX + 32, 
+                y: birdY.value + 24 
+            };
             // ground collision detection
             if (currentValue > height - 100 || currentValue < 0) {
                 gameOver.value = true;
             };
             const isColiding = obstacles.value.some((rect) => 
-                 isPointCollidingWithRect({ x: birdCenterX.value, y: birdCenterY.value }, rect)
+                 isPointCollidingWithRect(center, rect)
             );
 
             if(isColiding) {
@@ -148,7 +144,7 @@ const Index = () => {
         () => gameOver.value,
         (currentValue, previousValue) => {
             if (currentValue && !previousValue) {
-                cancelAnimation(x);
+                cancelAnimation(pipeX);
             }
         }
     );
@@ -166,7 +162,7 @@ const Index = () => {
         birdY.value = height / 3;
         birdYVelocity.value = 0;
         gameOver.value = false;
-        x.value = width;
+        pipeX.value = width;
         runOnJS(moveTheMap)();
         runOnJS(setScore)(0);
     }
@@ -217,14 +213,14 @@ const Index = () => {
         <Image 
             image={pipeTop} 
             y={topPipeY} 
-            x={ x } 
+            x={ pipeX } 
             width={pipeWidth} 
             height={pipeHeight} 
         />
         <Image 
             image={pipeDown} 
             y={bottomPipeY} 
-            x={ x } 
+            x={ pipeX } 
             width={pipeWidth} 
             height={pipeHeight} 
         />
@@ -246,14 +242,12 @@ const Index = () => {
             <Image 
                 image={bird} 
                 y={birdY} 
-                x={ birdPosition.x } 
+                x={ birdX } 
                 width={64} 
                 height={48} 
             />
         </Group>
         
-        {/* sim */}
-        {/* <Circle cy={birdCenterY}  cx={ birdCenterX } r={15}  /> */}
 
 
         {/* Score */}
